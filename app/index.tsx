@@ -1,26 +1,16 @@
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
     RefreshControl,
     StyleSheet,
+    Text,
     View
 } from 'react-native';
-import { VehicleCard } from './components/VehicleCard';
-import { Vehicle, VehicleResponse } from './model/vehicle';
-
-const ITEMS_PER_PAGE = 10;
-const API_BASE_URL = 'https://api-v3.mbta.com/vehicles';
-
-// Konfigurasi axios
-const api = axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 10000,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+import { VehicleRepositoryImpl } from '../src/data/repositories/VehicleRepositoryImpl';
+import { Vehicle } from '../src/domain/entities/Vehicle';
+import { GetVehiclesUseCase } from '../src/domain/usecases/vehicle/GetVehiclesUseCase';
+import { VehicleCard } from '../src/presentation/components/vehicle/VehicleCard';
 
 export default function HomeScreen() {
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -28,16 +18,17 @@ export default function HomeScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const vehicleRepository = new VehicleRepositoryImpl();
+    const getVehiclesUseCase = new GetVehiclesUseCase(vehicleRepository);
+
     const fetchVehicles = async () => {
         try {
-            setLoading(true);
+            const data = await getVehiclesUseCase.execute();
+            setVehicles(data);
             setError(null);
-
-            const response = await api.get<VehicleResponse>(`?page[limit]=${ITEMS_PER_PAGE}`);
-            setVehicles(response.data.data);
-        } catch (error) {
-            console.error('Error fetching vehicles:', error);
-            setError('Failed to load vehicles. Please try again.');
+        } catch (err) {
+            console.error('Error fetching vehicles:', err);
+            setError('Failed to load data. Please try again.');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -63,22 +54,29 @@ export default function HomeScreen() {
 
     return (
         <View style={styles.container}>
-            <FlatList
-                data={vehicles}
-                renderItem={({ item }) => <VehicleCard vehicle={item} />}
-                keyExtractor={(item) => item.id}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                }
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                    error ? (
-                        <View style={styles.centered}>
-                            <Text style={styles.errorText}>{error}</Text>
+            {error ? (
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{error}</Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={vehicles}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => <VehicleCard vehicle={item} />}
+                    contentContainerStyle={styles.listContent}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                        />
+                    }
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>No vehicles available</Text>
                         </View>
-                    ) : null
-                }
-            />
+                    }
+                />
+            )}
         </View>
     );
 }
@@ -94,11 +92,28 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     listContent: {
-        paddingVertical: 12,
+        padding: 16,
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
     },
     errorText: {
         color: 'red',
+        fontSize: 16,
         textAlign: 'center',
-        margin: 20,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
     },
 });

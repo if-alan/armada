@@ -1,5 +1,6 @@
 import { Vehicle } from '@/src/domain/entities/Vehicle';
 import { useRoute } from '@/src/presentation/hooks/useRoute';
+import { useTrip } from '@/src/presentation/hooks/useTrip';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Platform, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
@@ -11,9 +12,15 @@ export default function VehicleDetailScreen() {
 
   const {
     route,
-    loading,
-    error
+    loading: routeLoading,
+    error: routeError
   } = useRoute(vehicle.route_id);
+
+  const {
+    trip,
+    loading: tripLoading,
+    error: tripError
+  } = useTrip(vehicle.trip_id);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -93,12 +100,12 @@ export default function VehicleDetailScreen() {
 
             <View style={styles.infoRow}>
               <Text style={styles.label}>Route:</Text>
-              {loading ? (
+              {routeLoading ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="small" color="#0066cc" />
                   <Text style={styles.loadingText}>Fetching route data...</Text>
                 </View>
-              ) : error ? (
+              ) : routeError ? (
                 <Text style={styles.value}>{vehicle.route_id || 'Not available'}</Text>
               ) : route ? (
                 <Text style={styles.value}>{route.long_name || route.id}</Text>
@@ -109,7 +116,18 @@ export default function VehicleDetailScreen() {
 
             <View style={styles.infoRow}>
               <Text style={styles.label}>Trip:</Text>
-              <Text style={styles.value}>{vehicle.trip_id || 'Not available'}</Text>
+              {tripLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#0066cc" />
+                  <Text style={styles.loadingText}>Fetching trip data...</Text>
+                </View>
+              ) : tripError ? (
+                <Text style={styles.value}>{vehicle.trip_id || 'Not available'}</Text>
+              ) : trip ? (
+                <Text style={styles.value}>{trip.headsign || trip.id}</Text>
+              ) : (
+                <Text style={styles.value}>{vehicle.trip_id || 'Not available'}</Text>
+              )}
             </View>
 
             <View style={styles.infoRow}>

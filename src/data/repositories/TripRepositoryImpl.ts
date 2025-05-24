@@ -27,4 +27,21 @@ export class TripRepositoryImpl implements TripRepository {
             throw error;
         }
     }
+
+    async getTripById(id: string): Promise<Trip | null> {
+        try {
+            const url = `trips/${id}`;
+
+            const response = await this.httpService.get<{ data: TripResponse }>(url);
+
+            if (!response.data) {
+                return null;
+            }
+
+            return this.mapper.mapFromResponse(response.data);
+        } catch (error) {
+            console.error(`Error fetching trip with id ${id}:`, error);
+            return null;
+        }
+    }
 }

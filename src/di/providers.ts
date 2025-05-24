@@ -4,6 +4,7 @@ import { TripRepositoryImpl } from '../data/repositories/TripRepositoryImpl';
 import { VehicleRepositoryImpl } from '../data/repositories/VehicleRepositoryImpl';
 import { GetRouteByIdUseCase } from '../domain/usecases/vehicle/GetRouteByIdUseCase';
 import { GetRoutesUseCase } from '../domain/usecases/vehicle/GetRoutesUseCase';
+import { GetTripByIdUseCase } from '../domain/usecases/vehicle/GetTripByIdUseCase';
 import { GetTripsUseCase } from '../domain/usecases/vehicle/GetTripsUseCase';
 import { GetVehiclesUseCase } from '../domain/usecases/vehicle/GetVehiclesUseCase';
 
@@ -28,5 +29,6 @@ export const routeUseCaseProvider = {
 };
 
 export const tripUseCaseProvider = {
-  getTripsUseCase: () => new GetTripsUseCase(repositoryProvider.tripRepository())
+  getTripsUseCase: () => new GetTripsUseCase(repositoryProvider.tripRepository()),
+  getTripByIdUseCase: () => new GetTripByIdUseCase(repositoryProvider.tripRepository())
 };

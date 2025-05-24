@@ -20,7 +20,7 @@ export const useRoute = (routeId: string) => {
             setRoute(response);
         } catch (err) {
             console.error('Error fetching route:', err);
-            setError('Gagal memuat data rute.');
+            setError('Failed to load route data.');
         } finally {
             setLoading(false);
         }

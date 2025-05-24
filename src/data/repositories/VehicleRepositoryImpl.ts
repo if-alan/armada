@@ -1,6 +1,5 @@
-import Config from 'react-native-config';
-import { Vehicle, VehicleResponse } from '../../domain/entities/Vehicle';
-import { VehicleRepository } from '../../domain/repositories/VehicleRepository';
+import { VehicleResponse } from '../../domain/entities/Vehicle';
+import { PaginatedVehicles, PaginationParams, VehicleRepository } from '../../domain/repositories/VehicleRepository';
 import { HttpService } from '../datasources/remote/services/HttpService';
 import { VehicleMapper } from '../mappers/VehicleMapper';
 
@@ -9,16 +8,29 @@ export class VehicleRepositoryImpl implements VehicleRepository {
     private mapper: VehicleMapper;
 
     constructor() {
-        this.httpService = new HttpService(Config.API_URL ?? 'https://api-v3.mbta.com/');
+        this.httpService = new HttpService();
         this.mapper = new VehicleMapper();
     }
 
-    async getVehicles(): Promise<Vehicle[]> {
+    async getVehicles(params: PaginationParams): Promise<PaginatedVehicles> {
         try {
-            const response = await this.httpService.get<{ data: VehicleResponse[] }>('vehicles');
-            return response.data.map(item => this.mapper.mapFromResponse(item));
+            const { page_limit: page_limit, page_offset } = params;
+            const url = `vehicles?page[limit]=${page_limit}&page[offset]=${page_offset}`;
+
+            const response = await this.httpService.get<{
+                data: VehicleResponse[],
+                links?: { next?: string }
+            }>(url);
+
+            const vehicles = response.data.map(item => this.mapper.mapFromResponse(item));
+            const hasMore = !!response.links?.next;
+
+            return {
+                data: vehicles,
+                hasMore
+            };
         } catch (error) {
-            console.error('Error fetching vehicles:', error);
+            console.error('Error fetching paginated vehicles:', error);
             throw error;
         }
     }

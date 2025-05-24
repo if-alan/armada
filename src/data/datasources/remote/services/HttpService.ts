@@ -3,7 +3,8 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 export class HttpService {
   private axiosInstance: AxiosInstance;
 
-  constructor(baseURL: string) {
+  constructor() {
+    const baseURL = 'https://api-v3.mbta.com/'
     this.axiosInstance = axios.create({
       baseURL,
       timeout: 10000,

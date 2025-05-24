@@ -17,14 +17,27 @@ export default function HomeScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [pageOffset, setPageOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     const vehicleRepository = new VehicleRepositoryImpl();
     const getVehiclesUseCase = new GetVehiclesUseCase(vehicleRepository);
 
-    const fetchVehicles = async () => {
+    const fetchVehicles = async (refresh = false) => {
         try {
-            const data = await getVehiclesUseCase.execute();
-            setVehicles(data);
+            if (refresh) {
+                setPageOffset(0);
+                setHasMore(true);
+            }
+
+            const currentOffset = refresh ? 0 : pageOffset;
+
+            const response = await getVehiclesUseCase.execute(currentOffset);
+
+            setVehicles(refresh ? response.data : [...vehicles, ...response.data]);
+            setHasMore(response.hasMore);
+            setPageOffset(currentOffset + response.data.length);
             setError(null);
         } catch (err) {
             console.error('Error fetching vehicles:', err);
@@ -32,16 +45,38 @@ export default function HomeScreen() {
         } finally {
             setLoading(false);
             setRefreshing(false);
+            setLoadingMore(false);
         }
     };
 
     const onRefresh = () => {
         setRefreshing(true);
+        fetchVehicles(true);
+    };
+
+    const loadMoreVehicles = () => {
+        if (!hasMore || loadingMore || refreshing) {
+            console.log('No more data or loading in progress', hasMore, loadingMore, refreshing);
+            return;
+        }
+
+        console.log('Loading more vehicles...', hasMore, loadingMore, refreshing);
+        setLoadingMore(true);
         fetchVehicles();
     };
 
+    const renderFooter = () => {
+        if (!loadingMore) return null;
+
+        return (
+            <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" />
+            </View>
+        );
+    };
+
     useEffect(() => {
-        fetchVehicles();
+        fetchVehicles(true);
     }, []);
 
     if (loading && !refreshing) {
@@ -75,6 +110,9 @@ export default function HomeScreen() {
                             <Text style={styles.emptyText}>No vehicles available</Text>
                         </View>
                     }
+                    onEndReached={loadMoreVehicles}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={renderFooter}
                 />
             )}
         </View>
@@ -115,5 +153,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#666',
         textAlign: 'center',
+    },
+    footerLoader: {
+        paddingVertical: 20,
+        alignItems: 'center',
     },
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
     ActivityIndicator,
     FlatList,
@@ -7,63 +7,19 @@ import {
     Text,
     View
 } from 'react-native';
-import { VehicleRepositoryImpl } from '../src/data/repositories/VehicleRepositoryImpl';
-import { Vehicle } from '../src/domain/entities/Vehicle';
-import { GetVehiclesUseCase } from '../src/domain/usecases/vehicle/GetVehiclesUseCase';
 import { VehicleCard } from '../src/presentation/components/vehicle/VehicleCard';
+import { useVehicles } from '../src/presentation/hooks/useVehicles';
 
 export default function HomeScreen() {
-    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [pageOffset, setPageOffset] = useState(0);
-    const [hasMore, setHasMore] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
-
-    const vehicleRepository = new VehicleRepositoryImpl();
-    const getVehiclesUseCase = new GetVehiclesUseCase(vehicleRepository);
-
-    const fetchVehicles = async (refresh = false) => {
-        try {
-            if (refresh) {
-                setPageOffset(0);
-                setHasMore(true);
-            }
-
-            const currentOffset = refresh ? 0 : pageOffset;
-
-            const response = await getVehiclesUseCase.execute(currentOffset);
-
-            setVehicles(refresh ? response.data : [...vehicles, ...response.data]);
-            setHasMore(response.hasMore);
-            setPageOffset(currentOffset + response.data.length);
-            setError(null);
-        } catch (err) {
-            console.error('Error fetching vehicles:', err);
-            setError('Failed to load data. Please try again.');
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-            setLoadingMore(false);
-        }
-    };
-
-    const onRefresh = () => {
-        setRefreshing(true);
-        fetchVehicles(true);
-    };
-
-    const loadMoreVehicles = () => {
-        if (!hasMore || loadingMore || refreshing) {
-            console.log('No more data or loading in progress', hasMore, loadingMore, refreshing);
-            return;
-        }
-
-        console.log('Loading more vehicles...', hasMore, loadingMore, refreshing);
-        setLoadingMore(true);
-        fetchVehicles();
-    };
+    const {
+        vehicles,
+        loading,
+        refreshing,
+        error,
+        loadingMore,
+        onRefresh,
+        loadMoreVehicles
+    } = useVehicles();
 
     const renderFooter = () => {
         if (!loadingMore) return null;
@@ -74,10 +30,6 @@ export default function HomeScreen() {
             </View>
         );
     };
-
-    useEffect(() => {
-        fetchVehicles(true);
-    }, []);
 
     if (loading && !refreshing) {
         return (

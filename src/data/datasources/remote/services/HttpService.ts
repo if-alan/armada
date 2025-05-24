@@ -1,13 +1,13 @@
+import { AppConfig } from '@/src/core/config/AppConfig';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
 export class HttpService {
   private axiosInstance: AxiosInstance;
 
-  constructor() {
-    const baseURL = 'https://api-v3.mbta.com/'
+  constructor(baseURL: string = AppConfig.API.BASE_URL) {
     this.axiosInstance = axios.create({
       baseURL,
-      timeout: 10000,
+      timeout: AppConfig.API.TIMEOUT,
       headers: {
         'Content-Type': 'application/json',
       },

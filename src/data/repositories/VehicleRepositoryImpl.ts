@@ -4,11 +4,9 @@ import { HttpService } from '../datasources/remote/services/HttpService';
 import { VehicleMapper } from '../mappers/VehicleMapper';
 
 export class VehicleRepositoryImpl implements VehicleRepository {
-    private httpService: HttpService;
     private mapper: VehicleMapper;
 
-    constructor() {
-        this.httpService = new HttpService();
+    constructor(private httpService: HttpService) {
         this.mapper = new VehicleMapper();
     }
 

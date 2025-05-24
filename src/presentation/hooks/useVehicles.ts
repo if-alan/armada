@@ -1,20 +1,30 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Vehicle } from '../../domain/entities/Vehicle';
-import { vehicleUseCaseProvider } from '../../di/providers';
 import { AppConfig } from '@/src/core/config/AppConfig';
+import { useCallback, useEffect, useState } from 'react';
+import { vehicleUseCaseProvider } from '../../di/providers';
+import { Vehicle } from '../../domain/entities/Vehicle';
 
-export const useVehicles = () => {
+export const useVehicles = (
+  showRouteFilter: boolean,
+  setShowRouteFilter: (n: boolean) => void,
+  selectedRoutes: string[],
+  setSelectedRoutes: (n: string[]) => void,
+  setError: (n: string | null) => void,
+) => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [pageOffset, setPageOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
   const getVehiclesUseCase = vehicleUseCaseProvider.getVehiclesUseCase();
 
-  const fetchVehicles = useCallback(async (refresh = false) => {
+  const handleApplyFilter = () => {
+    setShowRouteFilter(false);
+    fetchVehicles(true, selectedRoutes.map(item => item).join(','));
+  };
+
+  const fetchVehicles = useCallback(async (refresh = false, routes = '') => {
     try {
       if (refresh) {
         setPageOffset(0);
@@ -25,7 +35,7 @@ export const useVehicles = () => {
 
       if (loadingMore || (!hasMore && !refresh)) return;
 
-      if(refresh){
+      if (refresh) {
         setRefreshing(true)
       } else {
         setLoadingMore(true)
@@ -33,7 +43,8 @@ export const useVehicles = () => {
 
       const response = await getVehiclesUseCase.execute({
         page_limit: AppConfig.PAGINATION.DEFAULT_LIMIT,
-        page_offset: currentOffset
+        page_offset: currentOffset,
+        routes: routes
       });
 
       setVehicles(refresh ? response.data : [...vehicles, ...response.data]);
@@ -59,18 +70,24 @@ export const useVehicles = () => {
     fetchVehicles();
   }, [hasMore, loadingMore, refreshing, fetchVehicles]);
 
+  // Initial fetch
   useEffect(() => {
     fetchVehicles(true);
   }, []);
+
+  const handleClearAllFilters = () => {
+    setSelectedRoutes([]);
+    fetchVehicles(true);
+  };
 
   return {
     vehicles,
     loading,
     refreshing,
-    error,
     loadingMore,
-    hasMore,
     onRefresh,
-    loadMoreVehicles
+    loadMoreVehicles,
+    handleApplyFilter,
+    handleClearAllFilters,
   };
 };

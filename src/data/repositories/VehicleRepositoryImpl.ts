@@ -12,8 +12,13 @@ export class VehicleRepositoryImpl implements VehicleRepository {
 
     async getVehicles(params: PaginationParams): Promise<PaginatedVehicles> {
         try {
-            const { page_limit: page_limit, page_offset } = params;
-            const url = `vehicles?page[limit]=${page_limit}&page[offset]=${page_offset}`;
+            const { page_limit, page_offset, routes } = params;
+            let url = `vehicles?page[limit]=${page_limit}&page[offset]=${page_offset}`;
+
+            // Add route filter if provided
+            if (routes !== '') {
+                url += `&filter[route]=${routes}`;
+            };
 
             const response = await this.httpService.get<{
                 data: VehicleResponse[],

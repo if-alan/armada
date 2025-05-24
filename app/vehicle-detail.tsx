@@ -1,21 +1,23 @@
 import { Vehicle } from '@/src/domain/entities/Vehicle';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import React, { useEffect } from 'react';
-import { Platform, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { useRoute } from '@/src/presentation/hooks/useRoute';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import React from 'react';
+import { ActivityIndicator, Platform, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 export default function VehicleDetailScreen() {
-  const router = useRouter();
   const params = useLocalSearchParams();
   const vehicle = JSON.parse(params.vehicle as string) as Vehicle;
+
+  const {
+    route,
+    loading,
+    error
+  } = useRoute(vehicle.route_id);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString();
-  };
-
-  const handleBack = () => {
-    router.back();
   };
 
   const hasValidCoordinates =
@@ -26,13 +28,13 @@ export default function VehicleDetailScreen() {
 
   return (
     <>
-      <Stack.Screen 
+      <Stack.Screen
         options={{
           title: vehicle.label || vehicle.id || 'Armada Detail',
           headerTitleStyle: {
             fontSize: 18,
           },
-        }} 
+        }}
       />
       <View style={styles.container}>
         <StatusBar
@@ -59,50 +61,61 @@ export default function VehicleDetailScreen() {
                     longitude: vehicle.longitude,
                   }}
                   title={vehicle.label || vehicle.id}
-                  description={`Status: ${vehicle.current_status || 'Tidak tersedia'}`}
+                  description={`Status: ${vehicle.current_status || 'Not available'}`}
                 />
               </MapView>
             </View>
           ) : (
             <View style={styles.noMapContainer}>
-              <Text style={styles.noMapText}>Koordinat lokasi tidak tersedia</Text>
+              <Text style={styles.noMapText}>Location Cordinat Not available</Text>
             </View>
           )}
 
           <View style={styles.card}>
             <View style={styles.infoRow}>
               <Text style={styles.label}>Status:</Text>
-              <Text style={styles.value}>{vehicle.current_status || 'Tidak tersedia'}</Text>
+              <Text style={styles.value}>{vehicle.current_status || 'Not available'}</Text>
             </View>
 
             <View style={styles.infoRow}>
               <Text style={styles.label}>Latitude:</Text>
               <Text style={styles.value}>
-                {vehicle.latitude !== null ? vehicle.latitude.toFixed(6) : 'Tidak tersedia'}
+                {vehicle.latitude !== null ? vehicle.latitude.toFixed(6) : 'Not available'}
               </Text>
             </View>
 
             <View style={styles.infoRow}>
               <Text style={styles.label}>Longitude:</Text>
               <Text style={styles.value}>
-                {vehicle.longitude !== null ? vehicle.longitude.toFixed(6) : 'Tidak tersedia'}
+                {vehicle.longitude !== null ? vehicle.longitude.toFixed(6) : 'Not available'}
               </Text>
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.label}>Rute:</Text>
-              <Text style={styles.value}>{vehicle.route_id || 'Tidak tersedia'}</Text>
+              <Text style={styles.label}>Route:</Text>
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#0066cc" />
+                  <Text style={styles.loadingText}>Fetching route data...</Text>
+                </View>
+              ) : error ? (
+                <Text style={styles.value}>{vehicle.route_id || 'Not available'}</Text>
+              ) : route ? (
+                <Text style={styles.value}>{route.long_name || route.id}</Text>
+              ) : (
+                <Text style={styles.value}>{vehicle.route_id || 'Not available'}</Text>
+              )}
             </View>
 
             <View style={styles.infoRow}>
               <Text style={styles.label}>Trip:</Text>
-              <Text style={styles.value}>{vehicle.trip_id || 'Tidak tersedia'}</Text>
+              <Text style={styles.value}>{vehicle.trip_id || 'Not available'}</Text>
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.label}>Pembaruan Terakhir:</Text>
+              <Text style={styles.label}>Last Updated:</Text>
               <Text style={styles.value}>
-                {vehicle.updated_at ? formatDate(vehicle.updated_at) : 'Tidak tersedia'}
+                {vehicle.updated_at ? formatDate(vehicle.updated_at) : 'Not available'}
               </Text>
             </View>
           </View>
@@ -173,5 +186,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     flex: 1,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginLeft: 8,
   },
 });

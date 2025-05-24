@@ -22,4 +22,21 @@ export class RouteRepositoryImpl implements RouteRepository {
             throw error;
         }
     }
+
+    async getRouteById(id: string): Promise<Route | null> {
+        try {
+            const url = `routes/${id}`;
+
+            const response = await this.httpService.get<{ data: RouteResponse }>(url);
+
+            if (!response.data) {
+                return null;
+            }
+
+            return this.mapper.mapFromResponse(response.data);
+        } catch (error) {
+            console.error(`Error fetching route with id ${id}:`, error);
+            return null;
+        }
+    }
 }

@@ -4,9 +4,14 @@ import { vehicleUseCaseProvider } from '../../di/providers';
 import { Vehicle } from '../../domain/entities/Vehicle';
 
 export const useVehicles = (
+  fetchTrips: () => void,
   showRouteFilter: boolean,
   setShowRouteFilter: (n: boolean) => void,
+  showTripFilter: boolean,
+  setShowTripFilter: (n: boolean) => void,
+  setSelectedTrips: (n: string[]) => void,
   selectedRoutes: string[],
+  selectedTrips: string[],
   setSelectedRoutes: (n: string[]) => void,
   setError: (n: string | null) => void,
 ) => {
@@ -16,15 +21,26 @@ export const useVehicles = (
   const [pageOffset, setPageOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [activeFilterType, setActiveFilterType] = useState<'route' | 'trip' | null>(null);
 
   const getVehiclesUseCase = vehicleUseCaseProvider.getVehiclesUseCase();
 
   const handleApplyFilter = () => {
-    setShowRouteFilter(false);
-    fetchVehicles(true, selectedRoutes.map(item => item).join(','));
+    if (showRouteFilter) {
+      setActiveFilterType('route');
+      setSelectedTrips([]);
+      setShowRouteFilter(false);
+
+      fetchTrips();
+    } else if (showTripFilter) {
+      setActiveFilterType('trip');
+      setShowTripFilter(false);
+    }
+
+    fetchVehicles(true);
   };
 
-  const fetchVehicles = useCallback(async (refresh = false, routes = '') => {
+  const fetchVehicles = useCallback(async (refresh = false) => {
     try {
       if (refresh) {
         setPageOffset(0);
@@ -44,7 +60,8 @@ export const useVehicles = (
       const response = await getVehiclesUseCase.execute({
         page_limit: AppConfig.PAGINATION.DEFAULT_LIMIT,
         page_offset: currentOffset,
-        routes: routes
+        routes: selectedRoutes.map(item => item).join(','),
+        trips: selectedTrips.map(item => item).join(','),
       });
 
       setVehicles(refresh ? response.data : [...vehicles, ...response.data]);
@@ -77,6 +94,8 @@ export const useVehicles = (
 
   const handleClearAllFilters = () => {
     setSelectedRoutes([]);
+    setSelectedTrips([]);
+    setActiveFilterType(null);
     fetchVehicles(true);
   };
 
@@ -88,6 +107,7 @@ export const useVehicles = (
     onRefresh,
     loadMoreVehicles,
     handleApplyFilter,
+    activeFilterType,
     handleClearAllFilters,
   };
 };

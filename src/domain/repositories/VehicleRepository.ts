@@ -3,7 +3,8 @@ import { Vehicle } from '../entities/Vehicle';
 export interface PaginationParams {
   page_limit: number;
   page_offset: number;
-  routes: string; // Optional route ID filter
+  routes: string;
+  trips: string;
 }
 
 export interface PaginatedVehicles {

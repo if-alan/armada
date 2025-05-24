@@ -18,7 +18,7 @@ export class RouteRepositoryImpl implements RouteRepository {
 
             return response.data.map(item => this.mapper.mapFromResponse(item));
         } catch (error) {
-            console.error('Error fetching paginated vehicles:', error);
+            console.error('Error fetching routes:', error);
             throw error;
         }
     }

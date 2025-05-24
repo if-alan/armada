@@ -1,12 +1,13 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Vehicle } from '../../../domain/entities/Vehicle';
 
 interface VehicleCardProps {
     vehicle: Vehicle;
+    onPress: (vehicle: Vehicle) => void;
 }
 
-export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle }) => {
+export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPress }) => {
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -14,7 +15,10 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle }) => {
     };
 
     return (
-        <View style={styles.card}>
+        <TouchableOpacity
+            style={styles.card}
+            onPress={() => onPress(vehicle)}
+        >
             <Text style={styles.label}>{vehicle.label}</Text>
             <Text style={styles.status}>Status: {vehicle.current_status}</Text>
 
@@ -25,7 +29,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle }) => {
             <Text style={styles.updated}>
                 Last Updated: {formatDate(vehicle.updated_at)}
             </Text>
-        </View>
+        </TouchableOpacity>
     );
 };
 

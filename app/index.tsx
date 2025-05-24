@@ -1,5 +1,7 @@
+import { Vehicle } from '@/src/domain/entities/Vehicle';
 import { useRoutes } from '@/src/presentation/hooks/useRoutes';
 import { useTrips } from '@/src/presentation/hooks/useTrips';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
@@ -16,6 +18,7 @@ import { VehicleCard } from '../src/presentation/components/vehicle/VehicleCard'
 import { useVehicles } from '../src/presentation/hooks/useVehicles';
 
 export default function HomeScreen() {
+    const router = useRouter();
     const [showRouteFilter, setShowRouteFilter] = useState(false);
     const [showTripFilter, setShowTripFilter] = useState(false);
 
@@ -79,6 +82,13 @@ export default function HomeScreen() {
         );
     }
 
+    const handleVehiclePress = (vehicle: Vehicle) => {
+        router.push({
+            pathname: '/vehicle-detail',
+            params: { vehicle: JSON.stringify(vehicle) }
+        });
+    };
+
     return (
         <View style={styles.container}>
             {error ? (
@@ -129,7 +139,12 @@ export default function HomeScreen() {
                     <FlatList
                         data={vehicles}
                         keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => <VehicleCard vehicle={item} />}
+                        renderItem={({ item }) => (
+                            <VehicleCard
+                                vehicle={item}
+                                onPress={handleVehiclePress}
+                            />
+                        )}
                         contentContainerStyle={styles.listContent}
                         refreshControl={
                             <RefreshControl

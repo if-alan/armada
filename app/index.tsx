@@ -228,7 +228,7 @@ export default function HomeScreen() {
                     <View style={styles.modalContainer}>
                         <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>Chooe Route</Text>
+                                <Text style={styles.modalTitle}>Choose Route</Text>
                                 <View style={styles.modalHeaderRight}>
                                     <TouchableOpacity onPress={handleClearRouteFilters} style={styles.clearAllButton}>
                                         <Text style={styles.clearAllText}>Delete All</Text>

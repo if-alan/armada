@@ -15,7 +15,6 @@ export class VehicleRepositoryImpl implements VehicleRepository {
             const { page_limit, page_offset, routes, trips } = params;
             let url = `vehicles?page[limit]=${page_limit}&page[offset]=${page_offset}`;
 
-            // Add route filter if provided
             if (routes !== '') {
                 url += `&filter[route]=${routes}`;
             };

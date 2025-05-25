@@ -21,7 +21,7 @@ export default function RootLayout() {
               }}
             />
           </Stack>
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <StatusBar style="light" backgroundColor="#0a4c82" />
         </SafeAreaView>
       </ThemeProvider>
     </SafeAreaProvider>

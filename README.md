@@ -1,50 +1,75 @@
-# Welcome to your Expo app 👋
+# Armada – MBTA Vehicle Tracking App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Armada is a mobile application built with React Native and Expo that allows you to track MBTA public transportation vehicles in real-time. The app connects directly to the MBTA API to display vehicle, route, and trip data.
 
-## Get started
+**Main Features**
+1. Real-time Vehicle Tracking – View live vehicle positions on the map, complete with their status.
+2. Filter by Route – Display only vehicles from a specific route.
+3. Filter by Trip – Focus on a specific trip within a route.
+4. Vehicle Details – View full info such as coordinates, status, and last update time.
+5. Interactive Map – Navigate and monitor vehicles directly on a zoomable and pannable map.
 
-1. Install dependencies
+## How to Use
 
-   ```bash
-   npm install
-   ```
+### 1. Installation
+Before getting started, make sure you have Node.js, npm, and Expo CLI installed.
+```
+git clone <repo-url>
+cd armada
+npm install
+npx expo start
+```
+Open it in an emulator or directly use Expo Go on your phone to run the app.
 
-2. Start the app
+### 2. App Navigation
+   * **Home Screen** – Displays a list of currently active vehicles.
+   * **Vehicle Filter**
+     - Use the "Route Filter" button to select a specific route.
+     - After selecting a route, you can use the "Trip Filter" to narrow down to a specific trip.
+     - Tap "Delete All" to clear all active filters.
+   * **Vehicle Details**
+     - Tap on a vehicle card to view full info on the map.
+     - Includes real-time location, status, coordinates, as well as route and trip information.
+   * **Refresh Data** – Pull down to refresh and get the latest vehicle data.
+   * **Infinite Scroll** – The vehicle list will keep loading automatically as you scroll down.
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+## Structure & Architecture
+Armada uses a Clean Architecture approach to keep the codebase modular, organized, and scalable for future development.
+Folder Structure (In short):
+```
+/app                 # Main routing and layout for Expo
+/src
+  /core              # General configs and utilities
+  /data              # Data sources (API), mappings, and repositories
+  /domain            # Entities, use cases, and repository interfaces
+  /presentation      # UI components and hooks
+  /di                # Providers for DI (Dependency Injection)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+**Three Main Layers:**
+1. Presentation Layer
+   * Contains the UI and user interactions
+   * Connects to the domain via hooks and props
+2. Domain Layer
+   * Where the business logic lives
+   * Contains entities such as Vehicle, Route, Trip
+   * All app logic is wrapped in use cases
+3. Data Layer
+   * Fetches data from the MBTA API
+   * Maps API data format to internal format
+   * Implements the repository interfaces
 
-## Learn more
+## Development Plan
+Some ideas for future development:
+1. Performance Optimization & Caching
+   * Cache data to reduce API load
+   * Offline support using AsyncStorage or a local database
+2. UX/UI Enhancements
+   * Automatic dark & light mode
+   * Skeleton loading instead of basic spinners
+3. Architecture & Infrastructure
+   * Add unit tests & integration tests
+   * Integrate analytics (e.g., Firebase) to monitor performance & errors
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+With a clean and modular structure, Armada is flexible enough to add new features or be modified in the future. 

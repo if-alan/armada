@@ -57,9 +57,9 @@ export default function HomeScreen() {
         setShowRouteFilter,
         showTripFilter,
         setShowTripFilter,
+        selectedTrips,
         setSelectedTrips,
         selectedRoutes,
-        selectedTrips,
         setSelectedRoutes,
         setError
     );

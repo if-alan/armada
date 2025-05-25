@@ -9,9 +9,9 @@ export const useVehicles = (
   setShowRouteFilter: (n: boolean) => void,
   showTripFilter: boolean,
   setShowTripFilter: (n: boolean) => void,
+  selectedTrips: string[],
   setSelectedTrips: (n: string[]) => void,
   selectedRoutes: string[],
-  selectedTrips: string[],
   setSelectedRoutes: (n: string[]) => void,
   setError: (n: string | null) => void,
 ) => {
@@ -37,10 +37,18 @@ export const useVehicles = (
       setShowTripFilter(false);
     }
 
-    fetchVehicles(true);
+    fetchVehicles(
+      true,
+      selectedRoutes.map(item => item).join(','),
+      selectedTrips.map(item => item).join(',')
+    );
   };
 
-  const fetchVehicles = useCallback(async (refresh = false) => {
+  const fetchVehicles = useCallback(async (
+    refresh = false,
+    routesFilter = '',
+    tripsFilter = ''
+  ) => {
     try {
       if (refresh) {
         setPageOffset(0);
@@ -60,9 +68,10 @@ export const useVehicles = (
       const response = await getVehiclesUseCase.execute({
         page_limit: AppConfig.PAGINATION.DEFAULT_LIMIT,
         page_offset: currentOffset,
-        routes: selectedRoutes.map(item => item).join(','),
-        trips: selectedTrips.map(item => item).join(','),
+        routes: routesFilter,
+        trips: tripsFilter,
       });
+      console.log('selectedRoutes', selectedRoutes);
 
       setVehicles(refresh ? response.data : [...vehicles, ...response.data]);
       setHasMore(response.hasMore);
@@ -79,12 +88,20 @@ export const useVehicles = (
   }, [pageOffset, vehicles, hasMore, loadingMore, getVehiclesUseCase]);
 
   const onRefresh = useCallback(() => {
-    fetchVehicles(true);
+    fetchVehicles(
+      true,
+      selectedRoutes.map(item => item).join(','),
+      selectedTrips.map(item => item).join(',')
+    );
   }, [fetchVehicles]);
 
   const loadMoreVehicles = useCallback(() => {
     if (!hasMore || loadingMore || refreshing) return;
-    fetchVehicles();
+    fetchVehicles(
+      false,
+      selectedRoutes.map(item => item).join(','),
+      selectedTrips.map(item => item).join(','),
+    );
   }, [hasMore, loadingMore, refreshing, fetchVehicles]);
 
   // Initial fetch

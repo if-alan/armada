@@ -2,7 +2,7 @@ import { Route } from '@/src/domain/entities/Route';
 import { useCallback, useEffect, useState } from 'react';
 import { routeUseCaseProvider } from '../../di/providers';
 
-export const useRoutes = (setError: (n: string | null) => void) => {
+export const useRoutes = (errorFilter: (n: string | null) => void) => {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([]);
 
@@ -15,9 +15,9 @@ export const useRoutes = (setError: (n: string | null) => void) => {
       setRoutes(response);
     } catch (err) {
       console.error('Error fetching routes:', err);
-      setError('Failed to load data. Please try again.');
+      errorFilter('Failed to load route data. Please try again.');
     }
-  }, [getRouteUseCase, setError]);
+  }, [getRouteUseCase, errorFilter]);
 
   const handleRouteSelect = (routeId: string) => {
     setSelectedRoutes(prev => {
@@ -43,6 +43,7 @@ export const useRoutes = (setError: (n: string | null) => void) => {
 
   return {
     routes,
+    fetchRoutes,
     selectedRoutes,
     setSelectedRoutes,
     handleRouteSelect,

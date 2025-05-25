@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { tripUseCaseProvider } from '../../di/providers';
 
 export const useTrips = (
-  setError: (n: string | null) => void,
+  errorFilter: (n: string | null) => void,
   selectedRoutes: string[],
 ) => {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -18,9 +18,9 @@ export const useTrips = (
       setTrips(response);
     } catch (err) {
       console.error('Error fetching trips:', err);
-      setError('Failed to load data. Please try again.');
+      errorFilter('Failed to load trip data. Please try again.');
     }
-  }, [selectedRoutes, getTripsUseCase, setError]);
+  }, [selectedRoutes, getTripsUseCase, errorFilter]);
 
   const handleTripSelect = (tripId: string) => {
     setSelectedTrips(prev => {

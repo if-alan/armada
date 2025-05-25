@@ -87,14 +87,6 @@ export const useVehicles = (
     }
   }, [pageOffset, vehicles, hasMore, loadingMore, getVehiclesUseCase]);
 
-  const onRefresh = useCallback(() => {
-    fetchVehicles(
-      true,
-      selectedRoutes.map(item => item).join(','),
-      selectedTrips.map(item => item).join(',')
-    );
-  }, [fetchVehicles]);
-
   const loadMoreVehicles = useCallback(() => {
     if (!hasMore || loadingMore || refreshing) return;
     fetchVehicles(
@@ -118,10 +110,10 @@ export const useVehicles = (
 
   return {
     vehicles,
+    fetchVehicles,
     loading,
     refreshing,
     loadingMore,
-    onRefresh,
     loadMoreVehicles,
     handleApplyFilter,
     activeFilterType,

@@ -2,9 +2,10 @@ import { Vehicle } from '@/src/domain/entities/Vehicle';
 import { useRoutes } from '@/src/presentation/hooks/useRoutes';
 import { useTrips } from '@/src/presentation/hooks/useTrips';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Animated,
     FlatList,
     Modal,
     RefreshControl,
@@ -12,7 +13,7 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
 import { VehicleCard } from '../src/presentation/components/vehicle/VehicleCard';
 import { useVehicles } from '../src/presentation/hooks/useVehicles';
@@ -23,14 +24,37 @@ export default function HomeScreen() {
     const [showTripFilter, setShowTripFilter] = useState(false);
 
     const [error, setError] = useState<string | null>(null);
+    const [toastRouteError, setToastRouteError] = useState<string | null>(null);
+    const [toastTripError, setToastTripError] = useState<string | null>(null);
+    const toastOpacity = useRef(new Animated.Value(0)).current;
+
+    const showToastError = () => {
+        Animated.timing(toastOpacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+        }).start();
+
+        setTimeout(() => {
+            Animated.timing(toastOpacity, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+            }).start(() => {
+                setToastRouteError(null)
+                setToastTripError(null)
+            });
+        }, 3000);
+    };
 
     const {
         routes,
+        fetchRoutes,
         selectedRoutes,
         setSelectedRoutes,
         handleRouteSelect,
         handleClearRouteFilters,
-    } = useRoutes(setError);
+    } = useRoutes(setToastRouteError);
 
     const {
         trips,
@@ -39,14 +63,14 @@ export default function HomeScreen() {
         fetchTrips,
         handleTripSelect,
         handleClearTripFilters,
-    } = useTrips(setError, selectedRoutes);
+    } = useTrips(setToastTripError, selectedRoutes);
 
     const {
         vehicles,
+        fetchVehicles,
         loading,
         refreshing,
         loadingMore,
-        onRefresh,
         loadMoreVehicles,
         handleApplyFilter,
         activeFilterType,
@@ -63,6 +87,18 @@ export default function HomeScreen() {
         setSelectedRoutes,
         setError
     );
+
+    const onRefresh = useCallback(() => {
+        fetchVehicles(
+            true,
+            selectedRoutes.map(item => item).join(','),
+            selectedTrips.map(item => item).join(',')
+        );
+        fetchRoutes();
+        if (selectedRoutes.length > 0) {
+            fetchTrips();
+        }
+    }, []);
 
     const renderFooter = () => {
         if (!loadingMore) return null;
@@ -91,51 +127,70 @@ export default function HomeScreen() {
 
     return (
         <View style={styles.container}>
-            {error ? (
-                <View style={styles.errorContainer}>
-                    <Text style={styles.errorText}>{error}</Text>
-                </View>
-            ) : (
-                <View style={styles.container}>
-                    <View style={styles.header}>
-                        <Text style={styles.headerTitle}>Armada</Text>
-                        <View style={styles.filterButtons}>
-                            <TouchableOpacity
-                                style={[styles.filterButton, activeFilterType === 'route' && styles.activeFilterButton]}
-                                onPress={() => { setShowRouteFilter(true) }}
-                            >
-                                <Text style={styles.filterButtonText}>Route Filter</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[
-                                    styles.filterButton,
-                                    activeFilterType === 'trip' && styles.activeFilterButton,
-                                    { marginLeft: 8 },
-                                    selectedRoutes.length === 0 && styles.disabledFilterButton
-                                ]}
-                                onPress={() => {
-                                    if (selectedRoutes.length > 0) {
+            <View style={styles.container}>
+                {/* Toast Error Message */}
+                {(toastRouteError || toastTripError) && (
+                    <Animated.View style={[styles.toastContainer, { opacity: toastOpacity }]}>
+                        <View style={styles.toastContent}>
+                            <Text style={styles.toastText}>{toastRouteError || toastTripError}</Text>
+                        </View>
+                    </Animated.View>
+                )}
+
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Armada</Text>
+                    <View style={styles.filterButtons}>
+                        <TouchableOpacity
+                            style={[styles.filterButton, activeFilterType === 'route' && styles.activeFilterButton]}
+                            onPress={() => {
+                                if (toastRouteError) {
+                                    showToastError();
+                                } else {
+                                    setShowRouteFilter(true);
+                                }
+                            }}
+                        >
+                            <Text style={styles.filterButtonText}>Route Filter</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[
+                                styles.filterButton,
+                                activeFilterType === 'trip' && styles.activeFilterButton,
+                                { marginLeft: 8 },
+                                selectedRoutes.length === 0 && styles.disabledFilterButton
+                            ]}
+                            onPress={() => {
+                                if (selectedRoutes.length > 0) {
+                                    if (toastTripError) {
+                                        showToastError();
+                                    } else {
                                         setShowTripFilter(true);
                                     }
-                                }}
-                            >
-                                <Text style={styles.filterButtonText}>Trip Filter</Text>
-                            </TouchableOpacity>
-                        </View>
+                                }
+                            }}
+                        >
+                            <Text style={styles.filterButtonText}>Trip Filter</Text>
+                        </TouchableOpacity>
                     </View>
+                </View>
 
-                    {selectedRoutes.length > 0 && (
-                        <View style={styles.activeFilterContainer}>
-                            <Text style={styles.activeFilterText}>
-                                {activeFilterType === 'route' && `Active Filter: ${selectedRoutes.length} Route`}
-                                {activeFilterType === 'trip' && `Active Filter: ${selectedTrips.length} Trip`}
-                            </Text>
-                            <TouchableOpacity onPress={handleClearAllFilters}>
-                                <Text style={styles.clearFilterText}>Delete All</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
+                {selectedRoutes.length > 0 && (
+                    <View style={styles.activeFilterContainer}>
+                        <Text style={styles.activeFilterText}>
+                            {activeFilterType === 'route' && `Active Filter: ${selectedRoutes.length} Route`}
+                            {activeFilterType === 'trip' && `Active Filter: ${selectedTrips.length} Trip`}
+                        </Text>
+                        <TouchableOpacity onPress={handleClearAllFilters}>
+                            <Text style={styles.clearFilterText}>Delete All</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
+                {error && (!toastRouteError || !toastTripError) ? (
+                    <View style={styles.errorContainer}>
+                        <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                ) : (
                     <FlatList
                         data={vehicles}
                         keyExtractor={(item) => item.id}
@@ -161,143 +216,138 @@ export default function HomeScreen() {
                         onEndReachedThreshold={0.5}
                         ListFooterComponent={renderFooter}
                     />
+                )}
 
-                    {/* Modal Route Filter */}
-                    <Modal
-                        visible={showRouteFilter}
-                        animationType="slide"
-                        transparent={true}
-                        onRequestClose={() => setShowRouteFilter(false)}
-                    >
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalContent}>
-                                <View style={styles.modalHeader}>
-                                    <Text style={styles.modalTitle}>Route Option</Text>
-                                    <View style={styles.modalHeaderRight}>
-                                        <TouchableOpacity onPress={handleClearRouteFilters} style={styles.clearAllButton}>
-                                            <Text style={styles.clearAllText}>Delete All</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity onPress={() => setShowRouteFilter(false)}>
-                                            <Text style={styles.closeButton}>✕</Text>
-                                        </TouchableOpacity>
-                                    </View>
+                {/* Modal Route Filter */}
+                <Modal
+                    visible={showRouteFilter}
+                    animationType="slide"
+                    transparent={true}
+                    onRequestClose={() => setShowRouteFilter(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Chooe Route</Text>
+                                <View style={styles.modalHeaderRight}>
+                                    <TouchableOpacity onPress={handleClearRouteFilters} style={styles.clearAllButton}>
+                                        <Text style={styles.clearAllText}>Delete All</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => setShowRouteFilter(false)}>
+                                        <Text style={styles.closeButton}>✕</Text>
+                                    </TouchableOpacity>
                                 </View>
+                            </View>
 
-                                <ScrollView style={styles.routeList}>
-                                    {routes.map(route => (
+                            <ScrollView style={styles.routeList}>
+                                {routes.map(route => (
+                                    <TouchableOpacity
+                                        key={route.id}
+                                        style={[
+                                            styles.routeItem,
+                                            selectedRoutes.includes(route.id) && styles.selectedRouteItem
+                                        ]}
+                                        onPress={() => handleRouteSelect(route.id)}
+                                    >
+                                        <View style={styles.routeItemContent}>
+                                            <View style={[
+                                                styles.routeColor,
+                                                { backgroundColor: `#${route.color}` }
+                                            ]} />
+                                            <Text style={styles.routeText}>
+                                                {route.long_name}
+                                                {route.short_name ? ` (${route.short_name})` : ''}
+                                            </Text>
+                                        </View>
+
+                                        {selectedRoutes.includes(route.id) && (
+                                            <Text style={styles.checkmark}>✓</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+
+                            <View style={styles.modalFooter}>
+                                <TouchableOpacity
+                                    style={styles.applyButton}
+                                    onPress={handleApplyFilter}
+                                >
+                                    <Text style={styles.applyButtonText}>Apply Filter</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* Modal Filter Trip */}
+                <Modal
+                    visible={showTripFilter}
+                    animationType="slide"
+                    transparent={true}
+                    onRequestClose={() => setShowTripFilter(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>
+                                    Choose Trip {selectedRoutes.length > 0 ? `(${selectedRoutes.length} Route)` : ''}
+                                </Text>
+                                <View style={styles.modalHeaderRight}>
+                                    <TouchableOpacity onPress={handleClearTripFilters} style={styles.clearAllButton}>
+                                        <Text style={styles.clearAllText}>Delete All</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => setShowTripFilter(false)}>
+                                        <Text style={styles.closeButton}>✕</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
+                            <ScrollView style={styles.routeList}>
+                                {trips.length === 0 ? (
+                                    <View style={styles.emptyListContainer}>
+                                        <Text style={styles.emptyListText}>
+                                            {'Fetch trip data...'}
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    trips.map(trip => (
                                         <TouchableOpacity
-                                            key={route.id}
+                                            key={trip.id}
                                             style={[
                                                 styles.routeItem,
-                                                selectedRoutes.includes(route.id) && styles.selectedRouteItem
+                                                selectedTrips.includes(trip.id) && styles.selectedRouteItem
                                             ]}
-                                            onPress={() => handleRouteSelect(route.id)}
+                                            onPress={() => handleTripSelect(trip.id)}
                                         >
-                                            <View style={styles.routeItemContent}>
-                                                <View style={[
-                                                    styles.routeColor,
-                                                    { backgroundColor: `#${route.color}` }
-                                                ]} />
-                                                <Text style={styles.routeText}>
-                                                    {route.long_name}
-                                                    {route.short_name ? ` (${route.short_name})` : ''}
+                                            <View style={styles.tripItemContent}>
+                                                <Text style={styles.tripText}>
+                                                    {trip?.headsign}
+                                                </Text>
+                                                <Text style={styles.tripIdText}>
+                                                    ID: {trip.id || 'Unknown'}
                                                 </Text>
                                             </View>
 
-                                            {selectedRoutes.includes(route.id) && (
+                                            {selectedTrips.includes(trip.id) && (
                                                 <Text style={styles.checkmark}>✓</Text>
                                             )}
                                         </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
+                                    ))
+                                )}
+                            </ScrollView>
 
-                                <View style={styles.modalFooter}>
-                                    <TouchableOpacity
-                                        style={styles.applyButton}
-                                        onPress={handleApplyFilter}
-                                    >
-                                        <Text style={styles.applyButtonText}>Apply Filter</Text>
-                                    </TouchableOpacity>
-                                </View>
+                            <View style={styles.modalFooter}>
+                                <TouchableOpacity
+                                    style={styles.applyButton}
+                                    onPress={handleApplyFilter}
+                                >
+                                    <Text style={styles.applyButtonText}>Terapkan Filter</Text>
+                                </TouchableOpacity>
                             </View>
                         </View>
-                    </Modal>
-
-                    {/* Modal Filter Trip */}
-                    <Modal
-                        visible={showTripFilter}
-                        animationType="slide"
-                        transparent={true}
-                        onRequestClose={() => setShowTripFilter(false)}
-                    >
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalContent}>
-                                <View style={styles.modalHeader}>
-                                    <Text style={styles.modalTitle}>
-                                        Pilih Trip {selectedRoutes.length > 0 ? `(${selectedRoutes.length} Rute)` : ''}
-                                    </Text>
-                                    <View style={styles.modalHeaderRight}>
-                                        <TouchableOpacity onPress={handleClearTripFilters} style={styles.clearAllButton}>
-                                            <Text style={styles.clearAllText}>Hapus Semua</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity onPress={() => setShowTripFilter(false)}>
-                                            <Text style={styles.closeButton}>✕</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-
-                                <ScrollView style={styles.routeList}>
-                                    {trips.length === 0 ? (
-                                        <View style={styles.emptyListContainer}>
-                                            <Text style={styles.emptyListText}>
-                                                {selectedRoutes.length === 0
-                                                    ? 'Pilih rute terlebih dahulu'
-                                                    : 'Memuat data trip...'}
-                                            </Text>
-                                        </View>
-                                    ) : (
-                                        trips.map(trip => (
-                                            <TouchableOpacity
-                                                key={trip.id}
-                                                style={[
-                                                    styles.routeItem,
-                                                    selectedTrips.includes(trip.id) && styles.selectedRouteItem
-                                                ]}
-                                                onPress={() => handleTripSelect(trip.id)}
-                                            >
-                                                <View style={styles.tripItemContent}>
-                                                    <Text style={styles.tripText}>
-                                                        {trip?.headsign || 'Tanpa Tujuan'}
-                                                    </Text>
-                                                    <Text style={styles.tripSubText}>
-                                                        Rute: {trip?.route_id || 'Tidak diketahui'}
-                                                    </Text>
-                                                    <Text style={styles.tripIdText}>
-                                                        ID: {trip.id || 'Tidak diketahui'}
-                                                    </Text>
-                                                </View>
-
-                                                {selectedTrips.includes(trip.id) && (
-                                                    <Text style={styles.checkmark}>✓</Text>
-                                                )}
-                                            </TouchableOpacity>
-                                        ))
-                                    )}
-                                </ScrollView>
-
-                                <View style={styles.modalFooter}>
-                                    <TouchableOpacity
-                                        style={styles.applyButton}
-                                        onPress={handleApplyFilter}
-                                    >
-                                        <Text style={styles.applyButtonText}>Terapkan Filter</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </View>
-                    </Modal>
-                </View>
-            )}
+                    </View>
+                </Modal>
+            </View>
         </View>
     );
 }
@@ -469,11 +519,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '500',
     },
-    tripSubText: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 2,
-    },
     tripIdText: {
         fontSize: 10,
         color: '#999',
@@ -502,6 +547,31 @@ const styles = StyleSheet.create({
     applyButtonText: {
         color: 'white',
         fontSize: 16,
+        fontWeight: '600',
+    },
+    toastContainer: {
+        position: 'absolute',
+        top: 60,
+        left: 20,
+        right: 20,
+        zIndex: 9999,
+        alignItems: 'center',
+    },
+    toastContent: {
+        backgroundColor: 'rgba(255, 59, 48, 0.9)',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+        elevation: 5,
+    },
+    toastText: {
+        color: 'white',
         fontWeight: '600',
     },
 });
